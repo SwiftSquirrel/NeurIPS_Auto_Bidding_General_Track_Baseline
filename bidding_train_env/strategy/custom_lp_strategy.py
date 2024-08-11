@@ -13,7 +13,7 @@ class CustomLpBiddingStrategy(BaseBiddingStrategy):
     CustomBidding Strategy
     """
 
-    def __init__(self, budget=750.8, name="CustomLpBiddingStrategy", cpa=8, category=1, w1_kp=5e-3, w1_kd=5e-4, w1_ki=5e-6):
+    def __init__(self, budget=750.8, name="CustomLpBiddingStrategy", cpa=8, category=1):
         super().__init__(budget, name, cpa, category)
         self.total_volumn = 499977
         self.history_volumn = 0
@@ -45,10 +45,10 @@ class CustomLpBiddingStrategy(BaseBiddingStrategy):
 
 
         # self.pid_w0 = PID(Kp=0.005, Kd=0.5, Ki=0.05, name='budget')
-        self.pid_w0 = PID(Kp=0, Kd=0, Ki=0, name='budget')
+        self.pid_w0 = PID(Kp=0.005, Kd=0.5, Ki=0.05, name='budget')
         # 0.5, 0.001, 0.005
-        # self.pid_w1 = PID(Kp=0.1, Kd=0.01, Ki=0.05, name='cpa')
-        self.pid_w1 = PID(Kp=w1_kp, Kd=w1_kd, Ki=w1_ki, name='cpa')
+        self.pid_w1 = PID(Kp=0.1, Kd=0.01, Ki=0.05, name='cpa')
+        # self.pid_w1 = PID(Kp=w1_kp, Kd=w1_kd, Ki=w1_ki, name='cpa')
 
         # self.pid_w1 = PID(Kp=0, Kd=0, Ki=0, name='cpa')
 
@@ -102,10 +102,9 @@ class CustomLpBiddingStrategy(BaseBiddingStrategy):
 
             w1_update = self.pid_w1.update(
                 self.cpa, cur_cpa, last_step_volumn*48/self.total_volumn)
-            w1_update = sigmoid(w1_update, coef=15/self.cpa)
+            w1_update = sigmoid(w1_update, scale=1, coef=15/self.cpa)
 
             self.w0 = self.w0*(1+w0_update)
-            # if timeStepIndex >= 24:
             self.w1 = self.w1*(1+w1_update)
 
             self.w0 = np.clip(self.w0, 0.59, 15.08)

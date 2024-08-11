@@ -113,8 +113,8 @@ class PID:
     def update(self, ref, measure, delta_sample):
         # assuming Kp, Ki, Kd positive
         if self.name=='cpa':
-            error = ref - measure
-            # error = min(ref - measure, 0)
+            # error = ref - measure
+            error = min(ref - measure, 0)
         else:
             error = ref - measure
         derivative = (error - self.last_error) / delta_sample
