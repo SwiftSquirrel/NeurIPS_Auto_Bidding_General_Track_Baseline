@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import math
 import logging
@@ -23,14 +24,14 @@ def getScore_nips(reward, cpa, cpa_constraint):
     return penalty * reward
 
 
-def run_test():
+def run_test(kp, kd, ki):
     """
     offline evaluation
     """
 
     data_loader = TestDataLoader(file_path='./data/traffic/period-7.csv')
     env = OfflineEnv()
-    agent = PlayerBiddingStrategy()
+    agent = PlayerBiddingStrategy(w1_kp=kp, w1_kd=kd, w1_ki=ki)
     print(agent.name)
 
     keys, test_dict = data_loader.keys, data_loader.test_dict
@@ -47,7 +48,7 @@ def run_test():
     }
 
     for timeStep_index in range(num_timeStepIndex):
-        logger.info(f'Timestep Index: {timeStep_index + 1} Begin')
+        # logger.info(f'Timestep Index: {timeStep_index + 1} Begin')
 
         pValue = pValues[timeStep_index]
         pValueSigma = pValueSigmas[timeStep_index]
@@ -91,12 +92,145 @@ def run_test():
         temImpressionResult = np.array(
             [(tick_conversion[i], tick_conversion[i]) for i in range(pValue.shape[0])])
         history["historyImpressionResult"].append(temImpressionResult)
-        logger.info(f'Timestep Index: {timeStep_index + 1} End')
+        # logger.info(f'Timestep Index: {timeStep_index + 1} End')
     all_reward = np.sum(rewards)
     all_cost = agent.budget - agent.remaining_budget
     cpa_real = all_cost / (all_reward + 1e-10)
     cpa_constraint = agent.cpa
     score = getScore_nips(all_reward, cpa_real, cpa_constraint)
+
+    # plot budget and cpa based on history 
+    # get spend ref at each step
+
+    def plot(history, budget, cpa_constraint, kp, kd, ki):
+        total_volumn = 499977
+
+        def _plot_budget(time_step, ref_budget, budget, kp, kd, ki):
+            # 绘制ref budget
+            plt.figure(figsize=(20, 8))
+            plt.plot(time_step, ref_budget, marker='.', label='ref budget', color='red')
+            # 在同一张图上绘制 budget
+            plt.plot(time_step, budget, marker='.', 
+                     label='budget', color='blue')
+            # 添加图例
+            plt.legend()
+            # 添加标题和坐标轴标签
+            plt.title('budget control')
+            plt.xlabel('time step')
+            plt.ylabel('budget')
+            plt.xticks(time_step, time_step)
+
+            # 显示图形
+            # plt.show()
+            plt.savefig(f'pid_plots/w1/budget_{kp}_{kd}_{ki}.png')
+
+        def _plot_cpa(time_step, cpa_constraint, cpa, kp, kd, ki):
+            # 绘制ref budget
+            plt.figure(figsize=(20, 8))
+            plt.plot(time_step, cpa_constraint, marker='.',
+                     label='ref cpa', color='red')
+            # 在同一张图上绘制 budget
+            plt.plot(time_step, cpa, label='cpa', marker='.',  color='blue')
+            # 添加图例
+            plt.legend()
+            # 添加标题和坐标轴标签
+            plt.title('cpa control')
+            plt.xlabel('time step')
+            plt.ylabel('cpa')
+            plt.xticks(time_step, time_step)
+
+            # 显示图形
+            # plt.show()
+            plt.savefig(f'pid_plots/w1/cpa_{kp}_{kd}_{ki}.png')
+
+        volumn = []
+        click = []
+        spend = []
+        ref_spend = []
+        cpa = []
+        time_step = []
+
+        for idx, (last_step_PValueInfo, last_step_AuctionResult, last_step_ImpressionResult) in enumerate(zip(history['historyPValueInfo'], history['historyAuctionResult'], history['historyImpressionResult'])):
+            time_step.append(idx)
+            last_step_volumn = last_step_PValueInfo.shape[0]
+            last_step_click = last_step_ImpressionResult[:, -1].sum()
+            last_step_spend = last_step_AuctionResult[:, -1].sum()
+            if idx == 0:
+                # volumn
+                volumn.append(last_step_volumn)
+                # click
+                click.append(last_step_click)
+                # spend
+                spend.append(last_step_spend)
+                # ref spend
+                ref_spend.append(budget/total_volumn*volumn[-1])
+                # cpa
+                cpa.append(spend[-1]/click[-1])
+            else:
+                # volumn
+                volumn.append(volumn[-1]+last_step_volumn)
+                # click
+                click.append(click[-1]+last_step_click)
+                # spend
+                spend.append(spend[-1]+last_step_spend)
+                # ref spend
+                ref_spend.append(budget/total_volumn*volumn[-1])
+                # cpa
+                cpa.append(spend[-1]/click[-1])
+            
+        cpa_constraint = [cpa_constraint for _ in volumn]
+        _plot_budget(time_step, ref_spend, spend, kp, kd, ki)
+        _plot_cpa(time_step, cpa_constraint, cpa, kp, kd, ki)
+    
+    plot(history, agent.budget, cpa_constraint, kp, kd, ki)
+
+    # 绘制w0
+    plt.figure(figsize=(20, 8))
+    plt.plot([i for i in range(len(agent.w0_list))], agent.w0_list, marker='x',
+             label='w0', color='red')
+    # 添加图例
+    plt.legend()
+    # 添加标题和坐标轴标签
+    plt.xlabel('time step')
+    plt.ylabel('w0')
+    plt.xticks([i for i in range(len(agent.w0_list))],
+               [i for i in range(len(agent.w0_list))])
+    # 显示图形
+    # plt.show()
+    plt.savefig(f'pid_plots/w1/w0_{kp}_{kd}_{ki}.png')
+
+    # 绘制w1
+    plt.figure(figsize=(20, 8))
+    plt.plot([i for i in range(len(agent.w1_list))], agent.w1_list, marker='x',
+             label='w1', color='red')
+    # 添加图例
+    plt.legend()
+    # 添加标题和坐标轴标签
+    plt.xlabel('time step')
+    plt.ylabel('w1')
+    plt.xticks([i for i in range(len(agent.w1_list))],
+               [i for i in range(len(agent.w1_list))])
+    # 显示图形
+    # plt.show()
+    plt.savefig(f'pid_plots/w1/w1_{kp}_{kd}_{ki}.png')
+
+    # 绘制bids
+    plt.figure(figsize=(20, 8))
+    plt.plot([i for i in range(len(agent.bid_list))], agent.bid_list, marker='x',
+             label='bids', color='red')
+    # 添加图例
+    plt.legend()
+    # 添加标题和坐标轴标签
+    plt.xlabel('time step')
+    plt.ylabel('bid')
+    plt.xticks([i for i in range(len(agent.w0_list))],
+               [i for i in range(len(agent.w0_list))])
+    # 显示图形
+    # plt.show()
+    plt.savefig(f'pid_plots/w1/bids_{kp}_{kd}_{ki}.png')
+    plt.close()
+
+
 
     logger.info(f'Total Reward: {all_reward}')
     logger.info(f'Total Cost: {all_cost}')

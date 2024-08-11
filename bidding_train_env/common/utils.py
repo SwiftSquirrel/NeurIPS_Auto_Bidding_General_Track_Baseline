@@ -99,6 +99,36 @@ def save_normalize_dict(normalize_dict, save_dir):
         pickle.dump(normalize_dict, file)
 
 
+class PID:
+    def __init__(self, Kp, Kd, Ki, name) -> None:
+        self.Kp = Kp
+        self.Kd = Kd
+        self.Ki = Ki
+
+        self.last_error = 0
+        self.integral = 0
+        self.name = name
+    
+    
+    def update(self, ref, measure, delta_sample):
+        # assuming Kp, Ki, Kd positive
+        if self.name=='cpa':
+            error = ref - measure
+            # error = min(ref - measure, 0)
+        else:
+            error = ref - measure
+        derivative = (error - self.last_error) / delta_sample
+        self.integral += error * delta_sample
+
+        output = self.Kp * error + self.Kd * derivative + self.Ki * self.integral
+        self.last_error = error
+
+        return output
+
+
+
+
+
 if __name__ == '__main__':
     test_data = {
         'state': [(1, 2, 3), (4, 5, 6), (7, 8, 9)],

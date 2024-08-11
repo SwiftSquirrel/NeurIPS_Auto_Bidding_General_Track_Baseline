@@ -109,15 +109,16 @@ class Custom_Lp:
                  ])
             del df
             gc.collect()
-            results = Parallel(n_jobs=12)(delayed(optimize)
-                                          (sub_df, budget, CPAConstraint, deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber) for (deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, budget, CPAConstraint), sub_df in grouped)
-            # # cnt = 0
-            # for (deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, budget, CPAConstraint), sub_df in grouped:
-            #     cnt += 1
-            #     if cnt >1:
-            #         continue
-            #     result = optimize(sub_df, budget, CPAConstraint, deliveryPeriodIndex,
-            #          advertiserCategoryIndex, advertiserNumber)
+            # results = Parallel(n_jobs=1)(delayed(optimize)
+            #                               (sub_df, budget, CPAConstraint, deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber) for (deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, budget, CPAConstraint), sub_df in grouped)
+            cnt = 0
+            for (deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, budget, CPAConstraint), sub_df in grouped:
+                cnt += 1
+                if cnt >1:
+                    continue
+                result = optimize(sub_df, budget, CPAConstraint, deliveryPeriodIndex,
+                     advertiserCategoryIndex, advertiserNumber)
+                results.append(result)
 
             results = pd.DataFrame(data=results, columns=[
                                    'deliveryPeriodIndex', 'advertiserCategoryIndex', 'advertiserNumber', 'B', 'cpa', 'status', 'alpha', 'beta'])

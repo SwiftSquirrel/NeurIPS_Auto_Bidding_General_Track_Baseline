@@ -7,7 +7,7 @@ WORKDIR /root/biddingTrainEnv
 COPY . .
 
 # 安装requirements.txt中指定的所有依赖
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 当容器启动时运行run_evaluate.py脚本
 CMD ["python3", "./run/run_evaluate.py"]
