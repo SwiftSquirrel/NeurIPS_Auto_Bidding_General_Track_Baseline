@@ -6,6 +6,9 @@ import bidding_train_env
 from bidding_train_env.strategy import PlayerBiddingStrategy
 from bidding_train_env.dataloader.test_dataloader import TestDataLoader
 from bidding_train_env.environment.offline_env import OfflineEnv
+import glob
+import os
+import pandas as pd
 
 # Configure logging
 logging.basicConfig(
@@ -30,12 +33,11 @@ def run_test():
     offline evaluation
     """
 
-    data_loader = TestDataLoader(file_path='./data/traffic/period-13.csv')
+    data_loader = TestDataLoader(file_path='./data/traffic/period-7.csv')
     env = OfflineEnv()
-
-
     keys, test_dict = data_loader.keys, data_loader.test_dict
     key = keys[0]
+
     # agent = PlayerBiddingStrategy(
     #     budget=data_loader.test_dict[key]['budget'].values[0], cpa=data_loader.test_dict[key]['CPAConstraint'].values[0], category=data_loader.test_dict[key]['advertiserCategoryIndex'].values[0])
     agent = PlayerBiddingStrategy(
@@ -70,7 +72,7 @@ def run_test():
                                 history["historyLeastWinningCost"])
 
         tick_value, tick_cost, tick_status, tick_conversion = env.simulate_ad_bidding(pValue, pValueSigma, bid,
-                                                                                      leastWinningCost)
+                                                                                    leastWinningCost)
 
         # Handling over-cost (a timestep costs more than the remaining budget of the bidding advertiser)
         over_cost_ratio = max(
@@ -81,7 +83,7 @@ def run_test():
                                                 replace=False)
             bid[dropped_pv_index] = 0
             tick_value, tick_cost, tick_status, tick_conversion = env.simulate_ad_bidding(pValue, pValueSigma, bid,
-                                                                                          leastWinningCost)
+                                                                                        leastWinningCost)
             over_cost_ratio = max(
                 (np.sum(tick_cost) - agent.remaining_budget) / (np.sum(tick_cost) + 1e-4), 0)
 
@@ -104,6 +106,9 @@ def run_test():
     cpa_real = all_cost / (all_reward + 1e-10)
     cpa_constraint = agent.cpa
     score = getScore_nips(all_reward, cpa_real, cpa_constraint)
+
+    cols=['reward','cpa','score']
+    
 
     # plot budget and cpa based on history 
     # get spend ref at each step
@@ -243,6 +248,8 @@ def run_test():
     logger.info(f'CPA-real: {cpa_real}')
     logger.info(f'CPA-constraint: {cpa_constraint}')
     logger.info(f'Score: {score}')
+
+
 
 
 if __name__ == '__main__':

@@ -33,19 +33,28 @@ def train_model():
 
     train_data_path = "./data/traffic/training_data_rlData_folder/training_data_all-rlData.csv"
     training_data = pd.read_csv(train_data_path)
-    training_data_end = training_data[training_data.done==1]
+    training_data_end = training_data[training_data.done == 1][[
+        'deliveryPeriodIndex', 'advertiserNumber', 'realAllCost', 'realAllConversion', 'CPAConstraint']].drop_duplicates()
     training_data_end['cpa'] = training_data_end['realAllCost'] / \
         training_data_end['realAllConversion']
+    best_score_data = pd.read_csv(
+        '/home/dawn/NeurIPS_Auto_Bidding_General_Track_Baseline/saved_model/customLpTest/best_results_calc_by_lp.csv')
+
+    training_data_end = pd.merge(training_data_end, best_score_data[['deliveryPeriodIndex', 'advertiserNumber','score']], on=[
+                                 'deliveryPeriodIndex', 'advertiserNumber'], how='left')
+    training_data_end = training_data_end.rename(columns={'score':'best_score'})
     training_data_end['nips_score'] = training_data_end.apply(
         lambda x: getScore_nips(x.realAllConversion, x.cpa, x.CPAConstraint), axis=1)
+    training_data_end['score_refined'] = training_data_end['nips_score'] / \
+        training_data_end['best_score']
 
     training_data_end = training_data_end.sort_values(
-        by=['deliveryPeriodIndex', 'advertiserCategoryIndex', 'nips_score'], ascending=False).reset_index(drop=True)
+        by=['advertiserNumber', 'score_refined'], ascending=False).reset_index(drop=True)
     training_data_end = training_data_end.groupby(
-        ['deliveryPeriodIndex', 'advertiserCategoryIndex']).head(2)
+        ['advertiserNumber']).head(15)
 
     training_data = pd.merge(training_data, training_data_end[[
-                             'deliveryPeriodIndex', 'advertiserCategoryIndex', 'advertiserNumber']], on=['deliveryPeriodIndex', 'advertiserCategoryIndex', 'advertiserNumber'], how='inner')
+                             'deliveryPeriodIndex', 'advertiserNumber']], on=['deliveryPeriodIndex', 'advertiserNumber'], how='inner')
 
 
     def safe_literal_eval(val):

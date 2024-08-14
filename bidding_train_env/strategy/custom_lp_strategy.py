@@ -119,3 +119,4 @@ class CustomLpBiddingStrategy(BaseBiddingStrategy):
         self.bid_list.append(np.mean(bids))
 
         return bids
+
