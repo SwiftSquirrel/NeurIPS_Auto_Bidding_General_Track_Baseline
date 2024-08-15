@@ -6,6 +6,60 @@ import os
 from bidding_train_env.strategy.base_bidding_strategy import BaseBiddingStrategy
 
 
+# state = (
+#     timeleft,
+#     bgtleft,
+#     bgtleft_last - bgtleft,
+
+#     state_features['historical_volume'],
+#     state_features['last_timeStepIndexs_volume'],
+#     state_features['last_3_timeStepIndexs_volume'],
+#     state_features['future_volume'],
+
+#     state_features['avg_bid_all'],
+#     state_features['avg_bid_last_3'],
+#     state_features['avg_bid_last'],
+
+#     state_features['avg_leastWinningCost_all'],
+#     state_features['avg_leastWinningCost_last_3'],
+#     state_features['avg_leastWinningCost_last'],
+
+#     state_features['avg_conversionAction_all'],
+#     state_features['avg_conversionAction_last_3'],
+#     state_features['avg_conversionAction_last'],
+
+#     state_features['avg_xi_all'],
+#     state_features['avg_xi_last_3'],
+#     state_features['avg_xi_last'],
+
+#     state_features['avg_pValue_all'],
+#     state_features['avg_pValue_last_3'],
+#     state_features['avg_pValue_last'],
+
+#     state_features['avg_pValueSigma_all'],
+#     state_features['avg_pValueSigma_last_3'],
+#     state_features['avg_pValueSigma_last'],
+
+#     state_features['avg_cpa_violation_all'],
+#     state_features['avg_cpa_violation_last_3'],
+#     state_features['avg_cpa_violation_last'],
+
+#     state_features['avg_pValue_diff_all'],
+#     state_features['avg_pValue_diff_last_3'],
+#     state_features['avg_pValue_diff_last'],
+
+#     state_features['bid_mp_ratio_all'],
+#     state_features['bid_mp_ratio_last_3'],
+#     state_features['bid_mp_ratio_last'],
+
+#     state_features['pValue_agg'],
+#     state_features['pValueSigma_agg'],
+#     state_features['timeStepIndex_volume_agg']
+
+# )
+
+
+
 class BcBiddingStrategy(BaseBiddingStrategy):
     """
     Behavioral Cloning (bc) Strategy
