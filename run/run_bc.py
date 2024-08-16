@@ -51,11 +51,12 @@ def train_model():
     training_data_end = training_data_end.sort_values(
         by=['advertiserNumber', 'score_refined'], ascending=False).reset_index(drop=True)
     training_data_end = training_data_end.groupby(
-        ['advertiserNumber']).head(12)
+        ['advertiserNumber']).head(15)
 
     training_data = pd.merge(training_data, training_data_end[[
                              'deliveryPeriodIndex', 'advertiserNumber']], on=['deliveryPeriodIndex', 'advertiserNumber'], how='inner')
-
+    
+    STATE_DIM = len(training_data['state'].values[0].split(','))
 
     def safe_literal_eval(val):
         if pd.isna(val):
@@ -71,8 +72,8 @@ def train_model():
     training_data["next_state"] = training_data["next_state"].apply(
         safe_literal_eval)
 
-    state_dim = 16
-    normalize_indices = [13, 14, 15]
+    state_dim = STATE_DIM
+    normalize_indices = [3, 4, 5, 6, 36]
     is_normalize = True
 
     normalize_dic = normalize_state(
