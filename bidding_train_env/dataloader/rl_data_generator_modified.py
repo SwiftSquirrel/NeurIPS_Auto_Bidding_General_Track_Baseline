@@ -27,14 +27,14 @@ class RlDataGenerator:
             df = pd.read_csv(csv_path)
             df_processed = self._generate_rl_data(df)
             csv_filename = os.path.basename(csv_path)
-            trainData_filename = csv_filename.replace('.csv', '-rlData-modified.csv')
+            trainData_filename = csv_filename.replace('.csv', '-rlData.csv')
             trainData_path = os.path.join(self.training_data_path, trainData_filename)
             df_processed.to_csv(trainData_path, index=False)
             training_data_list.append(df_processed)
             del df, df_processed
             print("处理文件成功：", csv_path)
         combined_dataframe = pd.concat(training_data_list, axis=0, ignore_index=True)
-        combined_dataframe_path = os.path.join(self.training_data_path, "training_data_all-rlData-modified.csv")
+        combined_dataframe_path = os.path.join(self.training_data_path, "training_data_all-rlData.csv")
         combined_dataframe.to_csv(combined_dataframe_path, index=False)
         print("整合多天训练数据成功；保存至:", combined_dataframe_path)
 
@@ -59,8 +59,12 @@ class RlDataGenerator:
                 CPAConstraint), group in df.groupby(
             ['deliveryPeriodIndex', 'advertiserNumber', 'advertiserCategoryIndex', 'budget', 'CPAConstraint']):
 
+
             best_score = best_result_calc_by_lp[(best_result_calc_by_lp.deliveryPeriodIndex ==
                                                 deliveryPeriodIndex) & (best_result_calc_by_lp.advertiserNumber == advertiserNumber)]['score'].values[0]
+            # 
+            if best_score < 1:
+                best_score = 1
 
             group = group.sort_values('timeStepIndex')
             group['realCost'] = group['isExposed']*group['cost']
@@ -115,8 +119,11 @@ class RlDataGenerator:
             #########   #################
             #### cpa info #####
             #########   #################
+            # currently, cpa is calculated based on pValue
             group['cum_cpa'] = group['cum_realCost']/group['cum_click']
             group['cpa_violation'] = group['cum_cpa']/CPAConstraint - 1
+            group['cpa_violation'] = group['cpa_violation'].clip(upper=10)
+            group['cum_cpa'] = group['cum_cpa'].clip(upper=100)
 
 
             #########   #################
@@ -151,7 +158,6 @@ class RlDataGenerator:
                              'timeStepIndex'], how='left')
             group = pd.merge(group, group_agg_score_continuous[['timeStepIndex', 'reward_continuous']], on=[
                              'timeStepIndex'], how='left')
-
 
 
 
@@ -209,6 +215,9 @@ class RlDataGenerator:
             for timeStepIndex in group['timeStepIndex'].unique():
                 if timeStepIndex == 0:
                     bgtleft_last = 1
+                
+
+
                 current_timeStepIndex_data = group[group['timeStepIndex'] == timeStepIndex]
 
                 timeStepIndexNum = 48
@@ -309,6 +318,7 @@ class RlDataGenerator:
 
         training_data = pd.DataFrame(training_data_rows)
         training_data = training_data.sort_values(by=['deliveryPeriodIndex', 'advertiserNumber', 'timeStepIndex'])
+        
 
         training_data['next_state'] = training_data.groupby(['deliveryPeriodIndex', 'advertiserNumber'])['state'].shift(
             -1)

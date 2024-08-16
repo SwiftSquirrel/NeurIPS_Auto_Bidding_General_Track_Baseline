@@ -31,7 +31,7 @@ class OfflineEnv:
         tick_value = np.clip(values,0,1)
         tick_conversion = np.random.binomial(n=1, p=tick_value)
 
-        return tick_value, tick_cost, tick_status,tick_conversion
+        return tick_value, tick_cost, tick_status, tick_conversion
 
 
 def test():

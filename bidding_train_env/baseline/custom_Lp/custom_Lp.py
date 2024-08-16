@@ -42,6 +42,7 @@ def optimize(data, B, cpa, deliveryPeriodIndex, advertiserCategoryIndex, adverti
     model.pvalue = pe.Param(model.idx, initialize=pvalue)
     model.x = pe.Var(model.idx, initialize=x, bounds=[0, 1])
 
+
     def _obj_rule(m):
         res = 0
         for i in model.idx:
@@ -78,7 +79,7 @@ def optimize(data, B, cpa, deliveryPeriodIndex, advertiserCategoryIndex, adverti
     else:
         alpha = np.abs(model.dual[model.budget_constraint])
         beta = np.abs(model.dual[model.cpa_constraint])
-
+    
     return [deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, B, cpa, status, alpha, beta]
 
 
@@ -98,26 +99,24 @@ class Custom_Lp:
             os.makedirs(save_path)
         csv_files = glob.glob(os.path.join(self.dataPath, '*.csv'))
         print(csv_files)
-        csv_files = sorted(csv_files)
-
+        csv_files = sorted(csv_files)[-3:-2]
+        # cnt = 0
+        results = []
         for i, csv_file_path in tqdm(enumerate(csv_files)):
             period_name = os.path.basename(csv_file_path).split('.')[0]
             df = pd.read_csv(csv_file_path)
+
             grouped = df.groupby(
                 ['deliveryPeriodIndex', 'advertiserCategoryIndex', 'advertiserNumber',
                  'budget', 'CPAConstraint'
                  ])
             del df
             gc.collect()
-            # results = Parallel(n_jobs=1)(delayed(optimize)
+            # results = Parallel(n_jobs=12)(delayed(optimize)
             #                               (sub_df, budget, CPAConstraint, deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber) for (deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, budget, CPAConstraint), sub_df in grouped)
-            cnt = 0
             for (deliveryPeriodIndex, advertiserCategoryIndex, advertiserNumber, budget, CPAConstraint), sub_df in grouped:
-                cnt += 1
-                if cnt >1:
-                    continue
                 result = optimize(sub_df, budget, CPAConstraint, deliveryPeriodIndex,
-                     advertiserCategoryIndex, advertiserNumber)
+                         advertiserCategoryIndex, advertiserNumber)
                 results.append(result)
 
             results = pd.DataFrame(data=results, columns=[

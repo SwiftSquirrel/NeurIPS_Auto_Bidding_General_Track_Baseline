@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] [%(name)s] [%(filename)s(%(lineno)d)] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-STATE_DIM = 16
+
 
 
 def train_iql_model():
@@ -21,6 +21,7 @@ def train_iql_model():
     """
     train_data_path = "./data/traffic/training_data_rlData_folder/training_data_all-rlData.csv"
     training_data = pd.read_csv(train_data_path)
+    STATE_DIM = len(training_data['state'].values[0].split(','))
 
     def safe_literal_eval(val):
         if pd.isna(val):
@@ -31,14 +32,17 @@ def train_iql_model():
             print(ValueError)
             return val
 
+
     training_data["state"] = training_data["state"].apply(safe_literal_eval)
     training_data["next_state"] = training_data["next_state"].apply(
         safe_literal_eval)
     is_normalize = True
 
+
+    normalize_indices = [3, 4, 5, 6, 36]
     if is_normalize:
         normalize_dic = normalize_state(
-            training_data, STATE_DIM, normalize_indices=[13, 14, 15])
+            training_data, STATE_DIM, normalize_indices=normalize_indices)
         # select use continuous reward
         training_data['reward'] = normalize_reward(
             training_data, "reward_continuous")
