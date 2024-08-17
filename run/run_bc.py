@@ -37,12 +37,17 @@ def train_model():
         'deliveryPeriodIndex', 'advertiserNumber', 'realAllCost', 'realAllConversion', 'CPAConstraint']].drop_duplicates()
     training_data_end['cpa'] = training_data_end['realAllCost'] / \
         training_data_end['realAllConversion']
-    best_score_data = pd.read_csv(
-        '/home/dawn/NeurIPS_Auto_Bidding_General_Track_Baseline/saved_model/customLpTest/best_results_calc_by_lp.csv')
 
-    training_data_end = pd.merge(training_data_end, best_score_data[['deliveryPeriodIndex', 'advertiserNumber','score']], on=[
+    # best_score_data = pd.read_csv(
+    #     '/home/dawn/NeurIPS_Auto_Bidding_General_Track_Baseline/saved_model/customLpTest/best_results_calc_by_lp.csv')
+
+    best_score_data = pd.read_csv(
+        '/home/dawn/NeurIPS_Auto_Bidding_General_Track_Baseline/saved_model/customLpTest/for_obj/bidding_param_for_obj.csv')
+
+    training_data_end = pd.merge(training_data_end, best_score_data[['deliveryPeriodIndex', 'advertiserNumber','obj_value']], on=[
                                  'deliveryPeriodIndex', 'advertiserNumber'], how='left')
-    training_data_end = training_data_end.rename(columns={'score':'best_score'})
+    training_data_end = training_data_end.rename(
+        columns={'obj_value': 'best_score'})
     training_data_end['nips_score'] = training_data_end.apply(
         lambda x: getScore_nips(x.realAllConversion, x.cpa, x.CPAConstraint), axis=1)
     training_data_end['score_refined'] = training_data_end['nips_score'] / \
