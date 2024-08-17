@@ -23,6 +23,8 @@ class RlDataGenerator:
         print(csv_files)
         training_data_list = []
         for csv_path in csv_files:
+            if os.path.basename(csv_files[0]) == 'period-15.csv':
+                continue
             print("开始处理文件：", csv_path)
             df = pd.read_csv(csv_path)
             df_processed = self._generate_rl_data(df)
