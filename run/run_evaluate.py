@@ -36,7 +36,7 @@ def run_test():
     data_loader = TestDataLoader(file_path='./data/traffic/period-10.csv')
     env = OfflineEnv()
     keys, test_dict = data_loader.keys, data_loader.test_dict
-    key = keys[-1]
+    key = keys[0]
 
     # agent = PlayerBiddingStrategy(
     #     budget=data_loader.test_dict[key]['budget'].values[0], cpa=data_loader.test_dict[key]['CPAConstraint'].values[0], category=data_loader.test_dict[key]['advertiserCategoryIndex'].values[0])
