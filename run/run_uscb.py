@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import logging
 from bidding_train_env.common.utils import normalize_state, normalize_reward, save_normalize_dict
 from bidding_train_env.baseline.uscb.replay_buffer import ReplayBuffer
@@ -30,6 +31,7 @@ def train_uscb_model():
     data_loader = TestDataLoader(file_path='./data/traffic/period-10.csv')
     env = OfflineEnv()
     keys, test_dict = data_loader.keys, data_loader.test_dict
+    # why it is -1
     key = keys[-1]
 
     # agent = PlayerBiddingStrategy(
@@ -40,6 +42,9 @@ def train_uscb_model():
     print(agent.name)
     num_timeStepIndex, pValues, pValueSigmas, leastWinningCosts = data_loader.mock_data(
         key)
+    cost_data = data_loader._get_cost_data_dict()[key[0]]
+    cost_dict = cost_data.groupby(['timeStepIndex'])['cost'].apply(list).apply(np.array).tolist()
+
     rewards = np.zeros(num_timeStepIndex)
     history = {
         'historyBids': [],
@@ -51,7 +56,7 @@ def train_uscb_model():
 
     for timeStep_index in range(num_timeStepIndex):
         # logger.info(f'Timestep Index: {timeStep_index + 1} Begin')
-
+        cost = cost_dict[timeStep_index]
         pValue = pValues[timeStep_index]
         pValueSigma = pValueSigmas[timeStep_index]
         leastWinningCost = leastWinningCosts[timeStep_index]
@@ -65,8 +70,8 @@ def train_uscb_model():
                                 history["historyAuctionResult"], history["historyImpressionResult"],
                                 history["historyLeastWinningCost"])
 
-        tick_value, tick_cost, tick_status, tick_conversion = env.simulate_ad_bidding(pValue, pValueSigma, bid,
-                                                                                      leastWinningCost)
+        tick_value, tick_cost, tick_status, tick_conversion, slot_status = env.simulate_ad_bidding(pValue, pValueSigma, bid,
+                                                                                      leastWinningCost, cost)
 
         # Handling over-cost (a timestep costs more than the remaining budget of the bidding advertiser)
         over_cost_ratio = max(
@@ -76,11 +81,12 @@ def train_uscb_model():
             dropped_pv_index = np.random.choice(pv_index, int(math.ceil(pv_index.shape[0] * over_cost_ratio)),
                                                 replace=False)
             bid[dropped_pv_index] = 0
-            tick_value, tick_cost, tick_status, tick_conversion = env.simulate_ad_bidding(pValue, pValueSigma, bid,
-                                                                                          leastWinningCost)
+            tick_value, tick_cost, tick_status, tick_conversion, slot_status = env.simulate_ad_bidding(pValue, pValueSigma, bid,
+                                                                                          leastWinningCost, cost)
             over_cost_ratio = max(
                 (np.sum(tick_cost) - agent.remaining_budget) / (np.sum(tick_cost) + 1e-4), 0)
 
+        win_status = (slot_status>=1).astype(int)
         agent.remaining_budget -= np.sum(tick_cost)
         rewards[timeStep_index] = np.sum(tick_conversion)
         temHistoryPValueInfo = [(pValue[i], pValueSigma[i])
@@ -89,10 +95,10 @@ def train_uscb_model():
         history["historyBids"].append(bid)
         history["historyLeastWinningCost"].append(leastWinningCost)
         temAuctionResult = np.array(
-            [(tick_status[i], tick_status[i], tick_cost[i]) for i in range(tick_status.shape[0])])
+            [(win_status[i], slot_status[i], tick_cost[i]) for i in range(tick_status.shape[0])])
         history["historyAuctionResult"].append(temAuctionResult)
         temImpressionResult = np.array(
-            [(tick_conversion[i], tick_conversion[i]) for i in range(pValue.shape[0])])
+            [(tick_status[i], tick_conversion[i]) for i in range(pValue.shape[0])])
         history["historyImpressionResult"].append(temImpressionResult)
         # logger.info(f'Timestep Index: {timeStep_index + 1} End')
     all_reward = np.sum(rewards)

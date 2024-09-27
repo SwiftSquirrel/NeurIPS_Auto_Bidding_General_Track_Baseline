@@ -121,6 +121,7 @@ class RlDataGenerator:
 
                 total_bid = current_timeStepIndex_data['bid'].sum()
                 total_value = current_timeStepIndex_data['pValue'].sum()
+                # action generation can depend on method which defines the action
                 action = total_bid / total_value if total_value > 0 else 0
                 reward = current_timeStepIndex_data[current_timeStepIndex_data['isExposed'] == 1][
                     'conversionAction'].sum()

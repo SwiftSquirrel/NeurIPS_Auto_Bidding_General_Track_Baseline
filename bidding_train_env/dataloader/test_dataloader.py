@@ -53,6 +53,12 @@ class TestDataLoader:
         data_dict = {key: group for key, group in grouped_data}
         return list(data_dict.keys()), data_dict
 
+    def _get_cost_data_dict(self):
+        grouped_data = self.raw_data[self.raw_data.xi==1][['deliveryPeriodIndex','timeStepIndex','pvIndex','cost']]
+        grouped_data = grouped_data.sort_values(['timeStepIndex','pvIndex','adSlot']).groupby(['deliveryPeriodIndex'])
+        data_dict = {key: group for key, group in grouped_data}
+        return data_dict
+
     def mock_data(self, key):
         """
         Get training data based on deliveryPeriodIndex and advertiserNumber, and construct the test data.
@@ -61,6 +67,9 @@ class TestDataLoader:
         pValues = data.groupby('timeStepIndex')['pValue'].apply(list).apply(np.array).tolist()
         pValueSigmas = data.groupby('timeStepIndex')['pValueSigma'].apply(list).apply(np.array).tolist()
         leastWinningCosts = data.groupby('timeStepIndex')['leastWinningCost'].apply(list).apply(np.array).tolist()
+        # conisder multi slot problem
+        # cost
+
         num_timeStepIndex = len(pValues)
         return num_timeStepIndex, pValues, pValueSigmas, leastWinningCosts
 
